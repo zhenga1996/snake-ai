@@ -157,3 +157,6 @@ class SnakeGameAI:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
+
+    def save(self):
+        pass
