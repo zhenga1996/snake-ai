@@ -1,10 +1,11 @@
 import torch
 import random
-import numpy as np
 from collections import deque
-from snake import SnakeGameAI, Direction, Point
+from snake import SnakeGameAI
+from util import get_state
 from model import Linear_QNet, QTrainer
 from plotter import plot
+import pickle
 
 MAX_MEM = 100_000
 BATCH_SIZE = 1_000
@@ -19,49 +20,6 @@ class Agent:
         self.mem = deque(maxlen=MAX_MEM)  # auto popleft when max
         self.model = Linear_QNet(11, 256, 3)
         self.trainer = QTrainer(self.model, learning_rate=LEARNING_RATE, gamma=self.gamma)
-
-    def get_state(self, game):
-        head = game.snake[0]
-        point_left = Point(head.x - 20, head.y)
-        point_right = Point(head.x + 20, head.y)
-        point_up = Point(head.x, head.y - 20)
-        point_down = Point(head.x, head.y + 20)
-
-        dir_left = game.direction == Direction.LEFT
-        dir_right = game.direction == Direction.RIGHT
-        dir_up = game.direction == Direction.UP
-        dir_down = game.direction == Direction.DOWN
-
-        state = [
-            # Danger straight
-            (dir_right and game.is_collision(point_right)) or
-            (dir_left and game.is_collision(point_left)) or
-            (dir_up and game.is_collision(point_up)) or
-            (dir_down and game.is_collision(point_down)),
-
-            # Danger right
-            (dir_up and game.is_collision(point_right)) or
-            (dir_down and game.is_collision(point_left)) or
-            (dir_left and game.is_collision(point_up)) or
-            (dir_right and game.is_collision(point_down)),
-
-            # Danger left
-            (dir_down and game.is_collision(point_right)) or
-            (dir_up and game.is_collision(point_left)) or
-            (dir_right and game.is_collision(point_up)) or
-            (dir_left and game.is_collision(point_down)),
-
-            # Move direction
-            dir_left, dir_right, dir_up, dir_down,
-
-            # Food location
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y,  # food down
-        ]
-
-        return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, game_over):
         self.mem.append((state, action, reward, next_state, game_over))
@@ -101,13 +59,19 @@ def train():
     record = 0
     agent = Agent()
     game = SnakeGameAI()
+
+    try:
+        plot_scores, plot_mean_scores, total_score, record, agent = pickle.load(open("data.pkl", "rb"))
+    except (OSError, IOError) as e:
+        pass
+
     while True:
-        state_old = agent.get_state(game)
+        state_old = get_state(game)
 
         final_move = agent.get_action(state_old)
 
         reward, game_over, score = game.play_step(final_move)
-        state_new = agent.get_state(game)
+        state_new = get_state(game)
 
         agent.train_short_mem(state_old, final_move, reward, state_new, game_over)
 
@@ -131,6 +95,15 @@ def train():
             mean_score = total_score / agent.num_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
+
+            # Save data
+            pickle.dump([
+                plot_scores,
+                plot_mean_scores,
+                total_score,
+                record,
+                agent,
+            ], open("data.pkl", "wb"))
 
 
 if __name__ == '__main__':

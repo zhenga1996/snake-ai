@@ -6,6 +6,7 @@ plt.ion()
 def plot(scores, mean_scores):
     display.clear_output(wait=True)
     display.display(plt.gcf())
+    plt.get_current_fig_manager().set_window_title('Snake AI')
     plt.clf()
     plt.title('Training...')
     plt.xlabel('Number of Games')
