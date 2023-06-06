@@ -15,8 +15,6 @@ class Direction(Enum):
     DOWN = 4
 
 
-CLOCKWISE = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-
 Point = namedtuple('Point', 'x, y')
 
 # rgb colors
@@ -27,11 +25,11 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 20
 
 
 class SnakeGameAI:
-    def __init__(self, w=640, h=480):
+    def __init__(self, speed, w=640, h=480):
+        self.speed = speed
         self.w = w
         self.h = h
         # init display
@@ -84,7 +82,7 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100 + len(self.snake):
+        if self.is_collision() or self.frame_iteration > 100 * len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
@@ -99,7 +97,7 @@ class SnakeGameAI:
 
         # 5. update ui and clock
         self._update_ui()
-        self.clock.tick(SPEED)
+        self.clock.tick(self.speed)
 
         # 6. return game over and score
         return reward, game_over, self.score
@@ -132,16 +130,17 @@ class SnakeGameAI:
 
     def _move(self, action):
         # [straight, right, left]
-        index = CLOCKWISE.index(self.direction)
+        clockwise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+        index = clockwise.index(self.direction)
 
         if np.array_equal(action, [1, 0, 0]):
-            new_dir = CLOCKWISE[index]  # no change
+            new_dir = clockwise[index]  # no change
         elif np.array_equal(action, [0, 1, 0]):
             next_index = (index + 1) % 4
-            new_dir = CLOCKWISE[next_index]  # clockwise
+            new_dir = clockwise[next_index]  # clockwise
         else:  # [0, 0, 1] counter-clockwise
             next_index = (index - 1) % 4
-            new_dir = CLOCKWISE[next_index]  # clockwise
+            new_dir = clockwise[next_index]  # clockwise
 
         self.direction = new_dir
 

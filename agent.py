@@ -51,19 +51,28 @@ class Agent:
 
         return final_move
 
+    def load(self):
+        self.model.load_state_dict(torch.load("data/model.pt"))
+        self.model.eval()
 
-def train():
+    def save(self):
+        torch.save(self.model.state_dict(), "data/model.pt")
+
+
+def train(spd):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
     agent = Agent()
-    game = SnakeGameAI()
+    game = SnakeGameAI(spd)
 
+    # Load data
     try:
-        plot_scores, plot_mean_scores, total_score, record, agent = pickle.load(open("data.pkl", "rb"))
-    except (OSError, IOError) as e:
-        pass
+        agent.load()
+        plot_scores, plot_mean_scores, agent.num_games, total_score, record = pickle.load(open("data/data.pkl", "rb"))
+    except (OSError, IOError) as err:
+        print(err)
 
     while True:
         state_old = get_state(game)
@@ -97,14 +106,21 @@ def train():
             plot(plot_scores, plot_mean_scores)
 
             # Save data
+            agent.save()
             pickle.dump([
                 plot_scores,
                 plot_mean_scores,
+                agent.num_games,
                 total_score,
-                record,
-                agent,
-            ], open("data.pkl", "wb"))
+                record
+            ], open("data/data.pkl", "wb"))
 
 
 if __name__ == '__main__':
-    train()
+    while True:
+        speed = input('Enter game speed [1-1000]: ')
+        if speed.isdigit() and 0 <= int(speed) <= 1000:
+            break
+        else:
+            print("Please input an integer between 1-1000!")
+    train(int(speed))
