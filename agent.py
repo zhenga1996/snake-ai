@@ -6,6 +6,8 @@ from util import get_state
 from model import Linear_QNet, QTrainer
 from plotter import plot
 import pickle
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 MAX_MEM = 100_000
 BATCH_SIZE = 1_000
